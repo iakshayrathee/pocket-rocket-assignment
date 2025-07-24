@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = 'https://pocket-rocket-assignment.onrender.com/';
 
 // Helper function to handle fetch requests
 const fetchApi = async (endpoint, options = {}) => {
