@@ -66,7 +66,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // CORS configuration
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://expense-tracker-pr.netlify.app/'],
+  origin: ['http://localhost:5173', 'https://expense-tracker-pr.netlify.app'],
   credentials: true, 
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
