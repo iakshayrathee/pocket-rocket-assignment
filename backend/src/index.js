@@ -65,33 +65,33 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // CORS configuration
+const allowedOrigins = [
+  'https://expense-tracker-pr.netlify.app',
+  'http://localhost:5173'   // For Vite dev server
+];
+
+// Configure CORS with credentials
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://expense-tracker-pr.netlify.app'],
-  credentials: true, 
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 };
 
-// Enable CORS with options
-app.use(cors(corsOptions));
-
-// Handle preflight requests
+// Enable CORS pre-flight
 app.options('*', cors(corsOptions));
 
-// Set security headers
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://expense-tracker-pr.netlify.app');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization'
-  );
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS'
-  );
-  next();
-});
+// Apply CORS to all routes
+app.use(cors(corsOptions));
 
 // Mount routers
 app.use('/api/v1/auth', auth);
