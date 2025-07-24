@@ -51,9 +51,14 @@ const handleFileUpload = (req, res, next) => {
     console.log('Uploaded file:', req.file);
     
     try {
-      // If file was uploaded, add the file path to req.body
+      // If file was uploaded, add the file metadata to req.body
       if (req.file) {
-        req.body.receipt = `/uploads/${req.file.filename}`;
+        req.body.receipt = {
+          filename: req.file.originalname,
+          url: `/uploads/${req.file.filename}`,
+          mimeType: req.file.mimetype,
+          size: req.file.size
+        };
       }
       
       // Ensure required fields are present

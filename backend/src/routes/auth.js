@@ -4,6 +4,7 @@ const {
   register,
   login,
   getMe,
+  updateProfile,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
@@ -32,7 +33,10 @@ router.post(
   login
 );
 
-// Protected route
-router.get('/me', protect, getMe);
+// Protected routes
+router.use(protect);
+router.route('/me')
+  .get(getMe)
+  .put(updateProfile);
 
 module.exports = router;

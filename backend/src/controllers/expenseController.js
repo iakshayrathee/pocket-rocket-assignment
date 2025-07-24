@@ -23,7 +23,12 @@ exports.createExpense = async (req, res, next) => {
       user: req.user.id
     };
 
-    //console.log('Creating expense with data:', JSON.stringify(expenseData, null, 2));
+    // If there's a receipt in the request, add it to the expense data
+    if (req.body.receipt) {
+      expenseData.receipt = req.body.receipt;
+    }
+
+    console.log('Creating expense with data:', JSON.stringify(expenseData, null, 2));
     
     // Create the expense
     const expense = await Expense.create(expenseData);
@@ -73,13 +78,35 @@ exports.getExpenses = async (req, res, next) => {
     const removeFields = ['select', 'sort', 'page', 'limit'];
     removeFields.forEach((param) => delete reqQuery[param]);
 
+    // Handle date range filtering
+    if (reqQuery.startDate || reqQuery.endDate) {
+      if (reqQuery.startDate) {
+        const startDate = new Date(reqQuery.startDate);
+        startDate.setUTCHours(0, 0, 0, 0);
+        query = query.where('date').gte(startDate);
+        delete reqQuery.startDate;
+      }
+      
+      if (reqQuery.endDate) {
+        const endDate = new Date(reqQuery.endDate);
+        endDate.setUTCHours(23, 59, 59, 999);
+        query = query.where('date').lte(endDate);
+        delete reqQuery.endDate;
+      }
+    }
+
+    // Handle other query parameters
     let queryStr = JSON.stringify(reqQuery);
     queryStr = queryStr.replace(
       /\b(gt|gte|lt|lte|in)\b/g,
       (match) => `$${match}`
     );
 
-    query = query.find(JSON.parse(queryStr));
+    // Apply other filters if any
+    const filters = JSON.parse(queryStr);
+    if (Object.keys(filters).length > 0) {
+      query = query.find(filters);
+    }
 
     // Select fields
     if (req.query.select) {
@@ -100,7 +127,10 @@ exports.getExpenses = async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 25;
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
+    
+    // Get total count with the same filters
     const total = await Expense.countDocuments(JSON.parse(queryStr));
+    const totalPages = Math.ceil(total / limit);
 
     query = query.skip(startIndex).limit(limit);
 
@@ -108,7 +138,13 @@ exports.getExpenses = async (req, res, next) => {
     const expenses = await query;
 
     // Pagination result
-    const pagination = {};
+    const pagination = {
+      total,
+      pages: totalPages,
+      page,
+      limit,
+      totalResults: total
+    };
 
     if (endIndex < total) {
       pagination.next = {
@@ -129,6 +165,10 @@ exports.getExpenses = async (req, res, next) => {
       count: expenses.length,
       pagination,
       data: expenses,
+      total,
+      pages: totalPages,
+      page,
+      limit
     });
   } catch (err) {
     next(err);
@@ -199,40 +239,66 @@ exports.updateExpense = async (req, res, next) => {
       );
     }
 
-    // If admin is updating status, log the change
-    const statusChanged =
-      req.body.status && req.body.status !== expense.status;
-    
-    expense = await Expense.findByIdAndUpdate(req.params.id, req.body, {
+    // Check if status is being updated
+    const isStatusUpdate = req.body.status && req.body.status !== expense.status;
+    const previousStatus = expense.status;
+    const previousData = {
+      amount: expense.amount,
+      category: expense.category,
+      description: expense.description,
+      date: expense.date,
+      status: expense.status
+    };
+
+    // Make sure request is not empty
+    if (!req.body) {
+      return next(new ErrorResponse('Please provide data to update', 400));
+    }
+
+    // Prepare update data
+    const updateData = { ...req.body };
+
+    // If there's a new receipt, update it
+    if (req.body.receipt) {
+      updateData.receipt = req.body.receipt;
+    } else if (req.body.removeReceipt) {
+      // If removeReceipt flag is set, remove the receipt
+      updateData.$unset = { receipt: '' };
+    }
+
+    // Update the expense
+    expense = await Expense.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
-    });
+    }).populate('user', 'name email');
+
+    // Get the updated fields
+    const updatedFields = {};
+    for (const key in req.body) {
+      if (JSON.stringify(previousData[key]) !== JSON.stringify(expense[key])) {
+        updatedFields[key] = {
+          from: previousData[key],
+          to: expense[key]
+        };
+      }
+    }
 
     // Log the action
-    if (statusChanged) {
-      await AuditLog.create({
-        action: 'expense:status_change',
-        user: req.user.id,
-        targetUser: expense.user,
-        targetExpense: expense._id,
-        details: {
-          oldStatus: expense.status,
-          newStatus: req.body.status,
-          rejectionReason: req.body.rejectionReason,
-        },
-        ipAddress: req.ip,
-        userAgent: req.get('user-agent'),
-      });
-    } else {
-      await AuditLog.create({
-        action: 'expense:update',
-        user: req.user.id,
-        targetExpense: expense._id,
-        details: req.body,
-        ipAddress: req.ip,
-        userAgent: req.get('user-agent'),
-      });
-    }
+    await AuditLog.create({
+      action: isStatusUpdate ? 'expense:status_change' : 'expense:update',
+      user: req.user.id,
+      targetExpense: expense._id,
+      targetUser: expense.user._id.toString() !== req.user.id ? expense.user._id : undefined,
+      details: {
+        ...(isStatusUpdate && {
+          previousStatus,
+          newStatus: expense.status
+        }),
+        updatedFields: Object.keys(updatedFields).length > 0 ? updatedFields : undefined,
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
 
     res.status(200).json({
       success: true,
@@ -248,7 +314,7 @@ exports.updateExpense = async (req, res, next) => {
 // @access  Private
 exports.deleteExpense = async (req, res, next) => {
   try {
-    const expense = await Expense.findById(req.params.id);
+    const expense = await Expense.findById(req.params.id).populate('user', 'name email');
 
     if (!expense) {
       return next(
@@ -257,10 +323,7 @@ exports.deleteExpense = async (req, res, next) => {
     }
 
     // Make sure user is expense owner or admin
-    if (
-      expense.user.toString() !== req.user.id &&
-      req.user.role !== 'admin'
-    ) {
+    if (expense.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
       return next(
         new ErrorResponse(
           `User ${req.user.id} is not authorized to delete this expense`,
@@ -269,16 +332,24 @@ exports.deleteExpense = async (req, res, next) => {
       );
     }
 
-    await expense.deleteOne();
-
-    // Log the action
+    // Log the action before deleting
     await AuditLog.create({
       action: 'expense:delete',
       user: req.user.id,
       targetExpense: expense._id,
+      targetUser: expense.user._id.toString() !== req.user.id ? expense.user._id : undefined,
+      details: {
+        amount: expense.amount,
+        category: expense.category,
+        status: expense.status,
+        description: expense.description,
+        date: expense.date
+      },
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
     });
+
+    await expense.deleteOne();
 
     res.status(200).json({
       success: true,

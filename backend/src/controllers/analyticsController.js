@@ -1,6 +1,7 @@
 const Expense = require('../models/Expense');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
+const { jsonToCsv, generateFilename } = require('../utils/csvGenerator');
 
 // @desc    Get expense statistics by category
 // @route   GET /api/v1/expenses/analytics/categories

@@ -50,6 +50,12 @@ const expenseSchema = new mongoose.Schema(
       type: String,
       maxlength: [500, 'Rejection reason cannot be more than 500 characters'],
     },
+    receipt: {
+      filename: String,
+      url: String,
+      mimeType: String,
+      size: Number
+    },
   },
   {
     timestamps: true,

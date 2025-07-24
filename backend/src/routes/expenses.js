@@ -21,8 +21,8 @@ router
   .route('/')
   .get(getExpenses)
   .post(
-    // Temporarily disable file upload for debugging
-    // handleFileUpload,
+    // Handle file upload first
+    handleFileUpload,
     
     // Then validate the form data
     [
@@ -38,7 +38,7 @@ router
         .optional()
         .isISO8601()
         .toDate(),
-      check('description', 'Description cannot be longer than 500 characters')
+      check('notes', 'Notes cannot be longer than 500 characters')
         .optional()
         .isLength({ max: 500 })
     ],
@@ -49,6 +49,10 @@ router
   .route('/:id')
   .get(getExpense)
   .put(
+    // Handle file upload first
+    handleFileUpload,
+    
+    // Then validate the form data
     [
       check('amount', 'Amount must be a positive number')
         .optional()
@@ -59,6 +63,9 @@ router
         .optional()
         .isIn(['pending', 'approved', 'rejected'])
         .withMessage('Status must be one of: pending, approved, rejected'),
+      check('notes', 'Notes cannot be longer than 500 characters')
+        .optional()
+        .isLength({ max: 500 })
     ],
     updateExpense
   )

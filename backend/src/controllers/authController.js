@@ -91,6 +91,52 @@ exports.getMe = async (req, res, next) => {
   }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/v1/auth/me
+// @access  Private
+exports.updateProfile = async (req, res, next) => {
+  try {
+    // Get the user first
+    let user = await User.findById(req.user.id).select('+password');
+    
+    // Update name and email if provided
+    if (req.body.name) user.name = req.body.name;
+    if (req.body.email) user.email = req.body.email;
+
+    // If password is being updated
+    if (req.body.newPassword) {
+      // Verify current password
+      if (!(await user.matchPassword(req.body.currentPassword))) {
+        return next(new ErrorResponse('Current password is incorrect', 401));
+      }
+      
+      // Set the new password (it will be hashed by the pre-save hook)
+      user.password = req.body.newPassword;
+    }
+
+    // Save the user (this will trigger the pre-save hook for password hashing)
+    user = await user.save();
+
+    // Remove password from the response
+    user.password = undefined;
+
+    // Log the action
+    await AuditLog.create({
+      action: 'user:update',
+      user: user._id,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   // Create token

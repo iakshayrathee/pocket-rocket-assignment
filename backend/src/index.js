@@ -20,8 +20,18 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Set static folder
-app.use(express.static(path.join(__dirname, 'public')));
+// Set static folders
+const publicDir = path.join(__dirname, '../public');
+const uploadsDir = path.join(publicDir, 'uploads');
+
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve static files
+app.use(express.static(publicDir));
 
 // Raw request body logging middleware
 app.use((req, res, next) => {
@@ -56,7 +66,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // CORS configuration
 const corsOptions = {
-  origin: 'http://localhost:5173', 
+  origin: 'http://localhost:5173', // Match your frontend URL
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']

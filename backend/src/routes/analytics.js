@@ -3,8 +3,9 @@ const { protect, authorize } = require('../middleware/auth');
 const { 
   getExpenseByCategory, 
   getExpenseByStatus, 
-  getExpenseTrend 
+  getExpenseTrend
 } = require('../controllers/analyticsController');
+const { exportAnalytics } = require('../controllers/exportController');
 
 const router = express.Router();
 
@@ -16,5 +17,6 @@ router.use(authorize('admin'));
 router.get('/categories', getExpenseByCategory);
 router.get('/status', getExpenseByStatus);
 router.get('/trend', getExpenseTrend);
+router.get('/export', exportAnalytics);
 
 module.exports = router;
