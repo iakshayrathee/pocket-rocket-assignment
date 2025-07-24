@@ -66,8 +66,8 @@ if (process.env.NODE_ENV === 'development') {
 
 // CORS configuration
 const corsOptions = {
-  origin: 'http://localhost:5173', // Match your frontend URL
-  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+  origin: ['http://localhost:5173', 'https://expense-tracker-pr.netlify.app/'],
+  credentials: true, 
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 };
@@ -80,7 +80,7 @@ app.options('*', cors(corsOptions));
 
 // Set security headers
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.setHeader('Access-Control-Allow-Origin', 'https://expense-tracker-pr.netlify.app/');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader(
     'Access-Control-Allow-Headers',

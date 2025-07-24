@@ -132,7 +132,7 @@ const AddExpense = () => {
       console.log('Sending form data with receipt:', formData.receipt ? 'Yes' : 'No');
       
       // Use the API service for consistency
-      const response = await fetch('http://localhost:8000/api/v1/expenses', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/expenses`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

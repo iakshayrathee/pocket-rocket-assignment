@@ -65,8 +65,8 @@ A comprehensive expense tracking application with role-based access control (RBA
    ```
 
 4. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
+   - Frontend: https://expense-tracker-pr.netlify.app/
+   - Backend API: https://pocket-rocket-assignment.onrender.com
 
 ## 🏗 Project Structure
 

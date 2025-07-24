@@ -19,7 +19,7 @@ const Expenses = () => {
     if (receipt && receipt.url) {
       // For PDFs, open in new tab
       if (receipt.mimeType === 'application/pdf') {
-        const pdfUrl = `http://localhost:8000${receipt.url}`;
+        const pdfUrl = `https://pocket-rocket-assignment.onrender.com/${receipt.url}`;
         window.open(pdfUrl, '_blank');
       } 
       // For images, open in modal
