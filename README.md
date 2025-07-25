@@ -68,6 +68,26 @@ A comprehensive expense tracking application with role-based access control (RBA
    - Frontend: https://expense-tracker-pr.netlify.app/
    - Backend API: https://pocket-rocket-assignment.onrender.com
 
+### Login Credentials
+
+For testing purposes, you can use the following pre-configured accounts:
+
+**Admin Account:**
+- Email: test@gmail.com
+- Password: test@gmail.com
+
+**Employee Account:**
+- Email: user@gmail.com
+- Password: user@gmail.com
+
+### Demo Previews
+
+**Employee Dashboard:**
+![Employee Dashboard](images/employee-dashboard.png)
+
+**Admin Dashboard:**
+![Admin Dashboard](images/admin-dashboard.png)
+
 ## 🏗 Project Structure
 
 ### Frontend (`/frontend/src`)
